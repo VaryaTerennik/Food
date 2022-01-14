@@ -96,7 +96,6 @@ window.addEventListener("DOMContentLoaded", () => {
   // Modal
 
   const btnsOpenModal = document.querySelectorAll("[data-modal]"),
-    btnCloseModal = document.querySelector("[data-close]"),
     modal = document.querySelector(".modal");
 
   function openModal() {
@@ -116,10 +115,8 @@ window.addEventListener("DOMContentLoaded", () => {
     item.addEventListener("click", openModal);
   });
 
-  btnCloseModal.addEventListener("click", closeModal);
-
   modal.addEventListener("click", (e) => {
-    if (e.target === modal) {
+    if (e.target === modal || e.target.getAttribute("data-close") == "") {
       closeModal();
     }
   });
@@ -130,7 +127,7 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // const modalTimerId = setTimeout(openModal, 10000);
+  const modalTimerId = setTimeout(openModal, 50000);
 
   function showModalByScroll() {
     if (
@@ -217,6 +214,81 @@ window.addEventListener("DOMContentLoaded", () => {
       new MenuCard(itemMenu, ".menu .container", "menu__item").render();
     });
   }
-
   createMenu();
+
+  // Forms
+
+  const forms = document.querySelectorAll("form");
+  const message = {
+    loading: "img/form/spinner.svg",
+    success: "Ваши данные отправлены",
+    error: "Что-то пошло не так",
+  };
+
+  forms.forEach((form) => {
+    postData(form);
+  });
+
+  function postData(form) {
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+
+      const statusMessage = document.createElement("img");
+      statusMessage.src = message.loading;
+      statusMessage.style.cssText = `
+          display: block;
+          margin: 0 auto;
+      `;
+      form.insertAdjacentElement("afterend", statusMessage);
+
+      const formData = new FormData(form);
+
+      const object = {};
+      formData.forEach(function (value, key) {
+        object[key] = value;
+      });
+
+      fetch("server.php", {
+        method: "POST",
+        body: JSON.stringify(object),
+        headers: {
+          "Content-type": "application/json",
+        },
+      })
+        .then((data) => data.text())
+        .then((data) => {
+          console.log(data);
+          showThanksDilog(message.success);
+          statusMessage.remove();
+        })
+        .catch(() => {
+          showThanksDilog(message.error);
+          statusMessage.remove();
+        })
+        .finally(() => {
+          form.reset();
+        });
+    });
+  }
+
+  function showThanksDilog(message) {
+    const prevModalDilog = document.querySelector(".modal__dialog");
+    prevModalDilog.classList.add("hide");
+    openModal();
+
+    const currModelDilog = document.createElement("div");
+    currModelDilog.classList.add("modal__dialog");
+    currModelDilog.innerHTML = `
+      <div class="modal__content">
+        <div class="modal__close" data-close>×</div>
+        <div class="modal__title">${message}</div>
+      </div>`;
+
+    document.querySelector(".modal").append(currModelDilog);
+    setTimeout(() => {
+      currModelDilog.remove();
+      prevModalDilog.classList.remove("hide");
+      closeModal();
+    }, 4000);
+  }
 });
