@@ -143,10 +143,10 @@ window.addEventListener("DOMContentLoaded", () => {
 
   class MenuCard {
     constructor(data, parentSelector, ...classes) {
-      this.srcimage = data.src;
-      this.imagealt = data.alt;
+      this.srcimage = data.img;
+      this.imagealt = data.altimg;
       this.title = data.title;
-      this.description = data.description;
+      this.description = data.descr;
       this.price = data.price;
       this.parent = document.querySelector(parentSelector);
       this.classes = classes;
@@ -182,7 +182,7 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  const arrMenu = [
+  const arrMenuLocal = [
     {
       src: "img/tabs/vegy.jpg",
       alt: "vegy",
@@ -209,12 +209,26 @@ window.addEventListener("DOMContentLoaded", () => {
     },
   ];
 
-  function createMenu() {
+  const getData = async (url) => {
+    const res = await fetch(url);
+
+    if (!res.ok) {
+      throw new Error(`Could not fetch ${url}, status ${res.status}`);
+    }
+    return await res.json();
+  };
+
+  getData("http://localhost:3000/menu").then((res) => {
+    createMenu(res);
+    console.log(res);
+  });
+
+  function createMenu(arrMenu) {
     arrMenu.map((itemMenu) => {
       new MenuCard(itemMenu, ".menu .container", "menu__item").render();
     });
   }
-  createMenu();
+  // createMenu(arrMenuLocal);
 
   // Forms
 
@@ -226,10 +240,22 @@ window.addEventListener("DOMContentLoaded", () => {
   };
 
   forms.forEach((form) => {
-    postData(form);
+    bindPostData(form);
   });
 
-  function postData(form) {
+  const postData = async (url, data) => {
+    const res = await fetch(url, {
+      method: "POST",
+      body: data,
+      headers: {
+        "Content-type": "application/json",
+      },
+    });
+
+    return await res.json();
+  };
+
+  function bindPostData(form) {
     form.addEventListener("submit", (e) => {
       e.preventDefault();
 
@@ -243,19 +269,9 @@ window.addEventListener("DOMContentLoaded", () => {
 
       const formData = new FormData(form);
 
-      const object = {};
-      formData.forEach(function (value, key) {
-        object[key] = value;
-      });
+      const json = JSON.stringify(Object.fromEntries(formData.entries()));
 
-      fetch("server.php", {
-        method: "POST",
-        body: JSON.stringify(object),
-        headers: {
-          "Content-type": "application/json",
-        },
-      })
-        .then((data) => data.text())
+      postData(" http://localhost:3000/requests", json)
         .then((data) => {
           console.log(data);
           showThanksDilog(message.success);
